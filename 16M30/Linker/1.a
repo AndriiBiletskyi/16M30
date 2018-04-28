@@ -1,0 +1,1746 @@
+;/*****************************************************
+;Chip type               : ATmega64A
+;Program type            : Application
+;AVR Core Clock frequency: 16,000000 MHz
+;Memory model            : Small
+;External RAM size       : 0
+;Data Stack size         : 1024
+;*****************************************************/
+;
+;#include <mega64a.h>
+;PCODE: $00000000 VOL: 0
+	#ifndef __SLEEP_DEFINED__
+;PCODE: $00000001 VOL: 0
+	#define __SLEEP_DEFINED__
+;PCODE: $00000002 VOL: 0
+	.EQU __se_bit=0x20
+;PCODE: $00000003 VOL: 0
+	.EQU __sm_mask=0x1C
+;PCODE: $00000004 VOL: 0
+	.EQU __sm_powerdown=0x10
+;PCODE: $00000005 VOL: 0
+	.EQU __sm_powersave=0x18
+;PCODE: $00000006 VOL: 0
+	.EQU __sm_standby=0x14
+;PCODE: $00000007 VOL: 0
+	.EQU __sm_ext_standby=0x1C
+;PCODE: $00000008 VOL: 0
+	.EQU __sm_adc_noise_red=0x08
+;PCODE: $00000009 VOL: 0
+	.SET power_ctrl_reg=mcucr
+;PCODE: $0000000A VOL: 0
+	#endif
+;PCODE: $0000000B VOL: 0
+;PCODE: $0000000C VOL: 0
+;#include <delay.h>
+;#include <spi.h>
+;
+;//-----------------------------------------------------------------------
+;#define KA1_ON          (PINA.6==0)//контроль заданной скорости 5.23
+;#define KA1_OFF         (PINA.6==1)
+;#define KA2_ON          (PINA.7==0)//тепловая защита 8.6
+;#define KA2_OFF         (PINA.7==1)
+;#define KA3_ON          (PINA.4==0)//готовность шпинделя 8.13
+;#define KA3_OFF         (PINA.4==1)
+;#define KA4_ON          (PINA.5==0)//готовность подач 8.20
+;#define KA4_OFF         (PINA.5==1)
+;#define KA551_ON        (PINA.2==0)//контроль поджима пиноли,давление пневмосистемы 9.11
+;#define KA551_OFF       (PINA.2==1)
+;#define KA6_ON          (PINF.2==0)//ограничение Х 9.17
+;#define KA6_OFF         (PINF.2==1)
+;#define KA7_ON          (PINF.3==0)//ограничение Z 9.19
+;#define KA7_OFF         (PINF.3==1)
+;#define KA8_ON          (PINC.4==0)//контроль смазки 10.19
+;#define KA8_OFF         (PINC.4==1)
+;#define KA9_ON          (PINC.3==0)//контроль дозаторной смазки 11.22
+;#define KA9_OFF         (PINC.3==1)
+;#define KA11_ON         (PINF.4==0)//контроль посадки 16.10
+;#define KA11_OFF        (PINF.4==1)
+;
+;#define SQ7_ON          (PINF.5==0)//T1
+;#define SQ7_OFF         (PINF.5==1)//T1
+;#define SQ8_ON          (PINF.6==0)//T2
+;#define SQ8_OFF         (PINF.6==1)//T2
+;#define SQ9_ON          (PINF.7==0)//T3
+;#define SQ9_OFF         (PINF.7==1)//T3
+;#define SQ10_ON         (PINA.0==0)//T4
+;#define SQ10_OFF        (PINA.0==1)//T4
+;#define K1_ON           (PINC.7==0)//Current
+;#define K1_OFF          (PINC.7==1)
+;
+;#define KA13_ON         (PINC.2==0)//контроль давления прижима 18.3
+;#define KA13_OFF        (PINC.2==1)
+;
+;#define KA22_ON         (PIND.0==0)//1
+;#define KA22_OFF        (PIND.0==1)
+;#define KA23_ON         (PIND.1==0)//2
+;#define KA23_OFF        (PIND.1==1)
+;#define KA24_ON         (PIND.2==0)//4
+;#define KA24_OFF        (PIND.2==1)
+;#define KA25_ON         (PIND.3==0)//8
+;#define KA25_OFF        (PIND.3==1)
+;#define KA26_ON         (PIND.4==0)//40
+;#define KA26_OFF        (PIND.4==1)
+;#define KA27_ON         (PIND.5==0)//M
+;#define KA27_OFF        (PIND.5==1)
+;#define KA29_ON         (PIND.6==0)//T
+;#define KA29_OFF        (PIND.6==1)
+;#define KA30_ON         (PIND.7==0)//Автомат режим
+;#define KA30_OFF        (PIND.7==1)
+;#define KA31_ON         (PINF.1==0)//Ручной режим
+;#define KA31_OFF        (PINF.1==1)
+;#define KA32_ON         (PINF.0==0)//Импульсная смазка
+;#define KA32_OFF        (PINF.0==1)
+;#define KA33_ON         (PINE.2==0)//Считывание
+;#define KA33_OFF        (PINE.2==1)
+;#define KA34_ON         (PINE.3==0)//CNC normal 23.15
+;#define KA34_OFF        (PINE.3==1)
+;#define KA54_ON         (PINC.1==0)//S 0
+;#define KA54_OFF        (PINC.1==1)
+;#define KA55_ON         (PINC.0==0)//S 1
+;#define KA55_OFF        (PINC.0==1)
+;#define KA56_ON         (PINC.5==0)//S 2
+;#define KA56_OFF        (PINC.5==1)
+;//------------------------------------------------------
+;#define KAR47_ON         XS6|=(1<<0);//ON S
+;#define KAR47_OFF        XS6&=~(1<<0);
+;#define KAR100_ON        XS6|=(1<<1);//ON X,Z
+;#define KAR100_OFF       XS6&=~(1<<1);
+;#define KAR30_ON         XS6|=(1<<2);//AUTO
+;#define KAR30_OFF        XS6&=~(1<<2);
+;#define KAR32_ON         XS7|=(1<<0);//ON Oil
+;#define KAR32_OFF        XS7&=~(1<<0);
+;#define KAR45_ON         XS6|=(1<<3);//ON Cool_1
+;#define KAR45_OFF        XS6&=~(1<<3);
+;#define KAR46_ON         XS6|=(1<<4);//ON Cool_2
+;#define KAR46_OFF        XS6&=~(1<<4);
+;#define KAR12_ON         XS7|=(1<<1);//CW_T
+;#define KAR12_OFF        XS7&=~(1<<1);//CCW_T
+;#define KAR10_ON         XS7|=(1<<2);//ON T
+;#define KAR10_OFF        XS7&=~(1<<2);//OFF T
+;#define KAR13_ON         XS7|=(1<<3);
+;#define KAR13_OFF        XS7&=~(1<<3);
+;#define KAR103_ON        XS7|=(1<<4);//S 1
+;#define KAR103_OFF       XS7&=~(1<<4);
+;#define KAR104_ON        XS7|=(1<<5);//S 2
+;#define KAR104_OFF       XS7&=~(1<<5);
+;#define KAR105_ON        XS7|=(1<<6);//S 0
+;#define KAR105_OFF       XS7&=~(1<<6);
+;#define KAR107_ON        XS6|=(1<<5);//ON RVK
+;#define KAR107_OFF       XS6&=~(1<<5);
+;#define KAR34_ON         XS6|=(1<<6);//Ready turn
+;#define KAR34_OFF        XS6&=~(1<<6);
+;//------------------------------------------------------
+;#define HL8_ON           XS8|=(1<<0);
+;#define HL8_OFF          XS8&=~(1<<0);
+;#define HL7_ON           XS8|=(1<<1);
+;#define HL7_OFF          XS8&=~(1<<1);
+;#define HL6_ON           XS8|=(1<<2);
+;#define HL6_OFF          XS8&=~(1<<2);
+;#define HL5_ON           XS8|=(1<<3);
+;#define HL5_OFF          XS8&=~(1<<3);
+;#define HL4_ON           XS8|=(1<<4);
+;#define HL4_OFF          XS8&=~(1<<4);
+;#define HL3_ON           XS8|=(1<<5);
+;#define HL3_OFF          XS8&=~(1<<5);
+;#define HL2_ON           XS8|=(1<<6);
+;#define HL2_OFF          XS8&=~(1<<6);
+;#define HL1_ON           XS8|=(1<<7);
+;#define HL1_OFF          XS8&=~(1<<7);
+;//------------------------------------------------------
+;int time=0;
+;unsigned char XS6=0,XS7=0,XS8=0,XS9=0;
+;//------------------------------------------------------
+;void init(void);//Initialization of the entire periphery
+;interrupt [TIM3_OVF] void timer3_ovf_isr(void);//lubrication
+;interrupt [TIM1_OVF] void timer1_ovf_isr(void);//counting time
+;void timer_on(void);//enable timer 1 (counting time)
+;void timer_off(void);//disable timer 1 (counting time)
+;void out(unsigned char xs_6, unsigned char xs_7, unsigned char xs_8, unsigned char xs_9);//set outputs
+;void led(void);//enable/disable leds
+;void m_t(char enable);//processing M,T-commands
+;char scan(void);//input processing
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;void main(void)
+; 0000 008F {
+
+	.CSEG
+;PCODE: $0000000D VOL: 0
+; 0000 0090     init();
+;PCODE: $0000000E VOL: 0
+; 0000 0091     out(XS6,XS7,XS8,XS9);
+;PCODE: $0000000F VOL: 0
+;PCODE: $00000010 VOL: 0
+;PCODE: $00000011 VOL: 0
+;PCODE: $00000012 VOL: 0
+;PCODE: $00000013 VOL: 0
+; 0000 0092     KAR12_ON
+;PCODE: $00000014 VOL: 0
+;PCODE: $00000015 VOL: 0
+;PCODE: $00000016 VOL: 0
+; 0000 0093     KAR10_ON
+;PCODE: $00000017 VOL: 0
+;PCODE: $00000018 VOL: 0
+;PCODE: $00000019 VOL: 0
+; 0000 0094     out(XS6,XS7,XS8,XS9);
+;PCODE: $0000001A VOL: 0
+;PCODE: $0000001B VOL: 0
+;PCODE: $0000001C VOL: 0
+;PCODE: $0000001D VOL: 0
+;PCODE: $0000001E VOL: 0
+; 0000 0095     delay_ms(100);
+;PCODE: $0000001F VOL: 0
+;PCODE: $00000020 VOL: 0
+;PCODE: $00000021 VOL: 0
+; 0000 0096     KAR10_OFF
+;PCODE: $00000022 VOL: 0
+;PCODE: $00000023 VOL: 0
+;PCODE: $00000024 VOL: 0
+; 0000 0097     KAR12_OFF
+;PCODE: $00000025 VOL: 0
+;PCODE: $00000026 VOL: 0
+;PCODE: $00000027 VOL: 0
+; 0000 0098     out(XS6,XS7,XS8,XS9);
+;PCODE: $00000028 VOL: 0
+;PCODE: $00000029 VOL: 0
+;PCODE: $0000002A VOL: 0
+;PCODE: $0000002B VOL: 0
+;PCODE: $0000002C VOL: 0
+; 0000 0099 
+; 0000 009A while (1)
+;PCODE: $0000002D VOL: 0
+; 0000 009B       {
+; 0000 009C         m_t(scan());
+;PCODE: $0000002E VOL: 0
+;PCODE: $0000002F VOL: 0
+;PCODE: $00000030 VOL: 0
+; 0000 009D         led();
+;PCODE: $00000031 VOL: 0
+; 0000 009E         out(XS6,XS7,XS8,XS9);
+;PCODE: $00000032 VOL: 0
+;PCODE: $00000033 VOL: 0
+;PCODE: $00000034 VOL: 0
+;PCODE: $00000035 VOL: 0
+;PCODE: $00000036 VOL: 0
+; 0000 009F       }
+;PCODE: $00000037 VOL: 0
+;PCODE: $00000038 VOL: 0
+; 0000 00A0 }
+;PCODE: $00000039 VOL: 0
+;PCODE: $0000003A VOL: 0
+;PCODE: $0000003B VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;void m_t(char enable)
+; 0000 00A5 {
+;PCODE: $0000003C VOL: 0
+;PCODE: $0000003D VOL: 0
+; 0000 00A6     int ka22 = 0;
+; 0000 00A7     int ka23 = 0;
+; 0000 00A8     int ka24 = 0;
+; 0000 00A9     int ka25 = 0;
+; 0000 00AA     int ka26 = 0;
+; 0000 00AB     static int M=0;
+; 0000 00AC     static int T=0;
+; 0000 00AD     static int KOD=0;
+; 0000 00AE 
+; 0000 00AF     if(KA22_ON){ka22=1;}else{ka22=0;}//1
+;PCODE: $0000003E VOL: 0
+;PCODE: $0000003F VOL: 0
+;PCODE: $00000040 VOL: 0
+;PCODE: $00000041 VOL: 0
+;PCODE: $00000042 VOL: 0
+;PCODE: $00000043 VOL: 0
+;PCODE: $00000044 VOL: 0
+;PCODE: $00000045 VOL: 0
+;PCODE: $00000046 VOL: 0
+;PCODE: $00000047 VOL: 0
+;PCODE: $00000048 VOL: 0
+;	enable -> Y+10
+;	ka22 -> R16,R17
+;	ka23 -> R18,R19
+;	ka24 -> R20,R21
+;	ka25 -> Y+8
+;	ka26 -> Y+6
+;PCODE: $00000049 VOL: 0
+;PCODE: $0000004A VOL: 0
+;PCODE: $0000004B VOL: 0
+;PCODE: $0000004C VOL: 0
+;PCODE: $0000004D VOL: 0
+;PCODE: $0000004E VOL: 0
+;PCODE: $0000004F VOL: 0
+;PCODE: $00000050 VOL: 0
+;PCODE: $00000051 VOL: 0
+;PCODE: $00000052 VOL: 0
+;PCODE: $00000053 VOL: 0
+;PCODE: $00000054 VOL: 0
+;PCODE: $00000055 VOL: 0
+;PCODE: $00000056 VOL: 0
+;PCODE: $00000057 VOL: 0
+;PCODE: $00000058 VOL: 0
+; 0000 00B0 
+; 0000 00B1     if(KA23_ON){ka23=1;}else{ka23=0;}//2
+;PCODE: $00000059 VOL: 0
+;PCODE: $0000005A VOL: 0
+;PCODE: $0000005B VOL: 0
+;PCODE: $0000005C VOL: 0
+;PCODE: $0000005D VOL: 0
+;PCODE: $0000005E VOL: 0
+;PCODE: $0000005F VOL: 0
+;PCODE: $00000060 VOL: 0
+;PCODE: $00000061 VOL: 0
+;PCODE: $00000062 VOL: 0
+; 0000 00B2 
+; 0000 00B3     if(KA24_ON){ka24=1;}else{ka24=0;}//4
+;PCODE: $00000063 VOL: 0
+;PCODE: $00000064 VOL: 0
+;PCODE: $00000065 VOL: 0
+;PCODE: $00000066 VOL: 0
+;PCODE: $00000067 VOL: 0
+;PCODE: $00000068 VOL: 0
+;PCODE: $00000069 VOL: 0
+;PCODE: $0000006A VOL: 0
+;PCODE: $0000006B VOL: 0
+;PCODE: $0000006C VOL: 0
+; 0000 00B4 
+; 0000 00B5     if(KA25_ON){ka25=1;}else{ka25=0;}//8
+;PCODE: $0000006D VOL: 0
+;PCODE: $0000006E VOL: 0
+;PCODE: $0000006F VOL: 0
+;PCODE: $00000070 VOL: 0
+;PCODE: $00000071 VOL: 0
+;PCODE: $00000072 VOL: 0
+;PCODE: $00000073 VOL: 0
+;PCODE: $00000074 VOL: 0
+;PCODE: $00000075 VOL: 0
+;PCODE: $00000076 VOL: 0
+; 0000 00B6 
+; 0000 00B7     if(KA26_ON){ka26=1;}else{ka26=0;}//40
+;PCODE: $00000077 VOL: 0
+;PCODE: $00000078 VOL: 0
+;PCODE: $00000079 VOL: 0
+;PCODE: $0000007A VOL: 0
+;PCODE: $0000007B VOL: 0
+;PCODE: $0000007C VOL: 0
+;PCODE: $0000007D VOL: 0
+;PCODE: $0000007E VOL: 0
+;PCODE: $0000007F VOL: 0
+;PCODE: $00000080 VOL: 0
+; 0000 00B8 
+; 0000 00B9     KOD = ka22 + 2*ka23 + 4*ka24 + 8*ka25 + 40*ka26;
+;PCODE: $00000081 VOL: 0
+;PCODE: $00000082 VOL: 0
+;PCODE: $00000083 VOL: 0
+;PCODE: $00000084 VOL: 0
+;PCODE: $00000085 VOL: 0
+;PCODE: $00000086 VOL: 0
+;PCODE: $00000087 VOL: 0
+;PCODE: $00000088 VOL: 0
+;PCODE: $00000089 VOL: 0
+;PCODE: $0000008A VOL: 0
+;PCODE: $0000008B VOL: 0
+;PCODE: $0000008C VOL: 0
+;PCODE: $0000008D VOL: 0
+;PCODE: $0000008E VOL: 0
+;PCODE: $0000008F VOL: 0
+;PCODE: $00000090 VOL: 0
+; 0000 00BA 
+; 0000 00BB     if(KA33_ON){
+;PCODE: $00000091 VOL: 0
+;PCODE: $00000092 VOL: 0
+;PCODE: $00000093 VOL: 0
+; 0000 00BC         if(KA27_ON)M = KOD;
+;PCODE: $00000094 VOL: 0
+;PCODE: $00000095 VOL: 0
+;PCODE: $00000096 VOL: 0
+;PCODE: $00000097 VOL: 0
+;PCODE: $00000098 VOL: 0
+; 0000 00BD         if(KA29_ON)T = KOD;
+;PCODE: $00000099 VOL: 0
+;PCODE: $0000009A VOL: 0
+;PCODE: $0000009B VOL: 0
+;PCODE: $0000009C VOL: 0
+;PCODE: $0000009D VOL: 0
+;PCODE: $0000009E VOL: 0
+; 0000 00BE     }
+;PCODE: $0000009F VOL: 0
+; 0000 00BF 
+; 0000 00C0     if(KA8_ON && M!=6 && KA9_ON && KA11_ON && !KA27_ON && !KA29_ON){KAR107_ON}else{KAR107_OFF}//RVK
+;PCODE: $000000A0 VOL: 0
+;PCODE: $000000A1 VOL: 0
+;PCODE: $000000A2 VOL: 0
+;PCODE: $000000A3 VOL: 0
+;PCODE: $000000A4 VOL: 0
+;PCODE: $000000A5 VOL: 0
+;PCODE: $000000A6 VOL: 0
+;PCODE: $000000A7 VOL: 0
+;PCODE: $000000A8 VOL: 0
+;PCODE: $000000A9 VOL: 0
+;PCODE: $000000AA VOL: 0
+;PCODE: $000000AB VOL: 0
+;PCODE: $000000AC VOL: 0
+;PCODE: $000000AD VOL: 0
+;PCODE: $000000AE VOL: 0
+;PCODE: $000000AF VOL: 0
+;PCODE: $000000B0 VOL: 0
+;PCODE: $000000B1 VOL: 0
+;PCODE: $000000B2 VOL: 0
+;PCODE: $000000B3 VOL: 0
+;PCODE: $000000B4 VOL: 0
+;PCODE: $000000B5 VOL: 0
+;PCODE: $000000B6 VOL: 0
+;PCODE: $000000B7 VOL: 0
+;PCODE: $000000B8 VOL: 0
+;PCODE: $000000B9 VOL: 0
+;PCODE: $000000BA VOL: 0
+;PCODE: $000000BB VOL: 0
+;PCODE: $000000BC VOL: 0
+;PCODE: $000000BD VOL: 0
+;PCODE: $000000BE VOL: 0
+;PCODE: $000000BF VOL: 0
+;PCODE: $000000C0 VOL: 0
+;PCODE: $000000C1 VOL: 0
+;PCODE: $000000C2 VOL: 0
+;PCODE: $000000C3 VOL: 0
+;PCODE: $000000C4 VOL: 0
+; 0000 00C1 
+; 0000 00C2     switch(M){
+;PCODE: $000000C5 VOL: 0
+; 0000 00C3         case 3:     if(enable)
+;PCODE: $000000C6 VOL: 0
+;PCODE: $000000C7 VOL: 0
+;PCODE: $000000C8 VOL: 0
+;PCODE: $000000C9 VOL: 0
+;PCODE: $000000CA VOL: 0
+; 0000 00C4                         KAR47_ON//ON S
+;PCODE: $000000CB VOL: 0
+;PCODE: $000000CC VOL: 0
+;PCODE: $000000CD VOL: 0
+; 0000 00C5                     M = 0;
+;PCODE: $000000CE VOL: 0
+;PCODE: $000000CF VOL: 0
+;PCODE: $000000D0 VOL: 0
+; 0000 00C6                     break;
+;PCODE: $000000D1 VOL: 0
+; 0000 00C7 
+; 0000 00C8         case 4:     if(enable)
+;PCODE: $000000D2 VOL: 0
+;PCODE: $000000D3 VOL: 0
+;PCODE: $000000D4 VOL: 0
+;PCODE: $000000D5 VOL: 0
+;PCODE: $000000D6 VOL: 0
+;PCODE: $000000D7 VOL: 0
+; 0000 00C9                         KAR47_ON//ON S
+;PCODE: $000000D8 VOL: 0
+;PCODE: $000000D9 VOL: 0
+;PCODE: $000000DA VOL: 0
+; 0000 00CA                     M = 0;
+;PCODE: $000000DB VOL: 0
+;PCODE: $000000DC VOL: 0
+;PCODE: $000000DD VOL: 0
+; 0000 00CB                     break;
+;PCODE: $000000DE VOL: 0
+; 0000 00CC 
+; 0000 00CD         case 5:     KAR47_OFF//OFF S
+;PCODE: $000000DF VOL: 0
+;PCODE: $000000E0 VOL: 0
+;PCODE: $000000E1 VOL: 0
+;PCODE: $000000E2 VOL: 0
+;PCODE: $000000E3 VOL: 0
+;PCODE: $000000E4 VOL: 0
+; 0000 00CE                     M = 0;
+;PCODE: $000000E5 VOL: 0
+;PCODE: $000000E6 VOL: 0
+; 0000 00CF                     break;
+;PCODE: $000000E7 VOL: 0
+; 0000 00D0 
+; 0000 00D1         case 6:     KAR10_ON
+;PCODE: $000000E8 VOL: 0
+;PCODE: $000000E9 VOL: 0
+;PCODE: $000000EA VOL: 0
+;PCODE: $000000EB VOL: 0
+;PCODE: $000000EC VOL: 0
+;PCODE: $000000ED VOL: 0
+; 0000 00D2                     out(XS6,XS7,XS8,XS9);
+;PCODE: $000000EE VOL: 0
+;PCODE: $000000EF VOL: 0
+;PCODE: $000000F0 VOL: 0
+;PCODE: $000000F1 VOL: 0
+;PCODE: $000000F2 VOL: 0
+; 0000 00D3                     timer_on();
+;PCODE: $000000F3 VOL: 0
+; 0000 00D4                     if(T==1){
+;PCODE: $000000F4 VOL: 0
+;PCODE: $000000F5 VOL: 0
+;PCODE: $000000F6 VOL: 0
+; 0000 00D5                       while(SQ7_OFF && time<20){
+;PCODE: $000000F7 VOL: 0
+;PCODE: $000000F8 VOL: 0
+;PCODE: $000000F9 VOL: 0
+;PCODE: $000000FA VOL: 0
+;PCODE: $000000FB VOL: 0
+;PCODE: $000000FC VOL: 0
+;PCODE: $000000FD VOL: 0
+;PCODE: $000000FE VOL: 0
+;PCODE: $000000FF VOL: 0
+;PCODE: $00000100 VOL: 0
+;PCODE: $00000101 VOL: 0
+; 0000 00D6                         if(KA11_ON){HL4_ON}else{HL4_OFF}
+;PCODE: $00000102 VOL: 0
+;PCODE: $00000103 VOL: 0
+;PCODE: $00000104 VOL: 0
+;PCODE: $00000105 VOL: 0
+;PCODE: $00000106 VOL: 0
+;PCODE: $00000107 VOL: 0
+;PCODE: $00000108 VOL: 0
+;PCODE: $00000109 VOL: 0
+;PCODE: $0000010A VOL: 0
+;PCODE: $0000010B VOL: 0
+;PCODE: $0000010C VOL: 0
+;PCODE: $0000010D VOL: 0
+; 0000 00D7                         out(XS6,XS7,XS8,XS9);
+;PCODE: $0000010E VOL: 0
+;PCODE: $0000010F VOL: 0
+;PCODE: $00000110 VOL: 0
+;PCODE: $00000111 VOL: 0
+;PCODE: $00000112 VOL: 0
+; 0000 00D8                       }
+;PCODE: $00000113 VOL: 0
+;PCODE: $00000114 VOL: 0
+; 0000 00D9                     }
+; 0000 00DA                     if(T==2){
+;PCODE: $00000115 VOL: 0
+;PCODE: $00000116 VOL: 0
+;PCODE: $00000117 VOL: 0
+;PCODE: $00000118 VOL: 0
+; 0000 00DB                       while(SQ8_OFF && time<20){
+;PCODE: $00000119 VOL: 0
+;PCODE: $0000011A VOL: 0
+;PCODE: $0000011B VOL: 0
+;PCODE: $0000011C VOL: 0
+;PCODE: $0000011D VOL: 0
+;PCODE: $0000011E VOL: 0
+;PCODE: $0000011F VOL: 0
+;PCODE: $00000120 VOL: 0
+;PCODE: $00000121 VOL: 0
+;PCODE: $00000122 VOL: 0
+;PCODE: $00000123 VOL: 0
+; 0000 00DC                         if(KA11_ON){HL4_ON}else{HL4_OFF}
+;PCODE: $00000124 VOL: 0
+;PCODE: $00000125 VOL: 0
+;PCODE: $00000126 VOL: 0
+;PCODE: $00000127 VOL: 0
+;PCODE: $00000128 VOL: 0
+;PCODE: $00000129 VOL: 0
+;PCODE: $0000012A VOL: 0
+;PCODE: $0000012B VOL: 0
+;PCODE: $0000012C VOL: 0
+;PCODE: $0000012D VOL: 0
+;PCODE: $0000012E VOL: 0
+;PCODE: $0000012F VOL: 0
+; 0000 00DD                         out(XS6,XS7,XS8,XS9);
+;PCODE: $00000130 VOL: 0
+;PCODE: $00000131 VOL: 0
+;PCODE: $00000132 VOL: 0
+;PCODE: $00000133 VOL: 0
+;PCODE: $00000134 VOL: 0
+; 0000 00DE                       }
+;PCODE: $00000135 VOL: 0
+;PCODE: $00000136 VOL: 0
+; 0000 00DF                     }
+; 0000 00E0                     if(T==3){
+;PCODE: $00000137 VOL: 0
+;PCODE: $00000138 VOL: 0
+;PCODE: $00000139 VOL: 0
+;PCODE: $0000013A VOL: 0
+; 0000 00E1                       while(SQ9_OFF && time<20){
+;PCODE: $0000013B VOL: 0
+;PCODE: $0000013C VOL: 0
+;PCODE: $0000013D VOL: 0
+;PCODE: $0000013E VOL: 0
+;PCODE: $0000013F VOL: 0
+;PCODE: $00000140 VOL: 0
+;PCODE: $00000141 VOL: 0
+;PCODE: $00000142 VOL: 0
+;PCODE: $00000143 VOL: 0
+;PCODE: $00000144 VOL: 0
+;PCODE: $00000145 VOL: 0
+; 0000 00E2                         if(KA11_ON){HL4_ON}else{HL4_OFF}
+;PCODE: $00000146 VOL: 0
+;PCODE: $00000147 VOL: 0
+;PCODE: $00000148 VOL: 0
+;PCODE: $00000149 VOL: 0
+;PCODE: $0000014A VOL: 0
+;PCODE: $0000014B VOL: 0
+;PCODE: $0000014C VOL: 0
+;PCODE: $0000014D VOL: 0
+;PCODE: $0000014E VOL: 0
+;PCODE: $0000014F VOL: 0
+;PCODE: $00000150 VOL: 0
+;PCODE: $00000151 VOL: 0
+; 0000 00E3                         out(XS6,XS7,XS8,XS9);
+;PCODE: $00000152 VOL: 0
+;PCODE: $00000153 VOL: 0
+;PCODE: $00000154 VOL: 0
+;PCODE: $00000155 VOL: 0
+;PCODE: $00000156 VOL: 0
+; 0000 00E4                       }
+;PCODE: $00000157 VOL: 0
+;PCODE: $00000158 VOL: 0
+; 0000 00E5                     }
+; 0000 00E6                     if(T==4){
+;PCODE: $00000159 VOL: 0
+;PCODE: $0000015A VOL: 0
+;PCODE: $0000015B VOL: 0
+;PCODE: $0000015C VOL: 0
+; 0000 00E7                       while(SQ10_OFF && time<20){
+;PCODE: $0000015D VOL: 0
+;PCODE: $0000015E VOL: 0
+;PCODE: $0000015F VOL: 0
+;PCODE: $00000160 VOL: 0
+;PCODE: $00000161 VOL: 0
+;PCODE: $00000162 VOL: 0
+;PCODE: $00000163 VOL: 0
+;PCODE: $00000164 VOL: 0
+;PCODE: $00000165 VOL: 0
+;PCODE: $00000166 VOL: 0
+;PCODE: $00000167 VOL: 0
+; 0000 00E8                         if(KA11_ON){HL4_ON}else{HL4_OFF}
+;PCODE: $00000168 VOL: 0
+;PCODE: $00000169 VOL: 0
+;PCODE: $0000016A VOL: 0
+;PCODE: $0000016B VOL: 0
+;PCODE: $0000016C VOL: 0
+;PCODE: $0000016D VOL: 0
+;PCODE: $0000016E VOL: 0
+;PCODE: $0000016F VOL: 0
+;PCODE: $00000170 VOL: 0
+;PCODE: $00000171 VOL: 0
+;PCODE: $00000172 VOL: 0
+;PCODE: $00000173 VOL: 0
+; 0000 00E9                         out(XS6,XS7,XS8,XS9);
+;PCODE: $00000174 VOL: 0
+;PCODE: $00000175 VOL: 0
+;PCODE: $00000176 VOL: 0
+;PCODE: $00000177 VOL: 0
+;PCODE: $00000178 VOL: 0
+; 0000 00EA                       }
+;PCODE: $00000179 VOL: 0
+;PCODE: $0000017A VOL: 0
+; 0000 00EB                     }
+; 0000 00EC 
+; 0000 00ED                     if(time<20){
+;PCODE: $0000017B VOL: 0
+;PCODE: $0000017C VOL: 0
+;PCODE: $0000017D VOL: 0
+;PCODE: $0000017E VOL: 0
+; 0000 00EE                         timer_off();
+;PCODE: $0000017F VOL: 0
+; 0000 00EF                         KAR12_ON
+;PCODE: $00000180 VOL: 0
+;PCODE: $00000181 VOL: 0
+;PCODE: $00000182 VOL: 0
+; 0000 00F0                         out(XS6,XS7,XS8,XS9);
+;PCODE: $00000183 VOL: 0
+;PCODE: $00000184 VOL: 0
+;PCODE: $00000185 VOL: 0
+;PCODE: $00000186 VOL: 0
+;PCODE: $00000187 VOL: 0
+; 0000 00F1                         timer_on();
+;PCODE: $00000188 VOL: 0
+; 0000 00F2                         while((K1_OFF | KA11_OFF) && time<20){
+;PCODE: $00000189 VOL: 0
+;PCODE: $0000018A VOL: 0
+;PCODE: $0000018B VOL: 0
+;PCODE: $0000018C VOL: 0
+;PCODE: $0000018D VOL: 0
+;PCODE: $0000018E VOL: 0
+;PCODE: $0000018F VOL: 0
+;PCODE: $00000190 VOL: 0
+;PCODE: $00000191 VOL: 0
+;PCODE: $00000192 VOL: 0
+;PCODE: $00000193 VOL: 0
+;PCODE: $00000194 VOL: 0
+;PCODE: $00000195 VOL: 0
+;PCODE: $00000196 VOL: 0
+;PCODE: $00000197 VOL: 0
+;PCODE: $00000198 VOL: 0
+;PCODE: $00000199 VOL: 0
+;PCODE: $0000019A VOL: 0
+;PCODE: $0000019B VOL: 0
+; 0000 00F3                             if(KA11_ON){HL4_ON}else{HL4_OFF}
+;PCODE: $0000019C VOL: 0
+;PCODE: $0000019D VOL: 0
+;PCODE: $0000019E VOL: 0
+;PCODE: $0000019F VOL: 0
+;PCODE: $000001A0 VOL: 0
+;PCODE: $000001A1 VOL: 0
+;PCODE: $000001A2 VOL: 0
+;PCODE: $000001A3 VOL: 0
+;PCODE: $000001A4 VOL: 0
+;PCODE: $000001A5 VOL: 0
+;PCODE: $000001A6 VOL: 0
+;PCODE: $000001A7 VOL: 0
+; 0000 00F4                             out(XS6,XS7,XS8,XS9);
+;PCODE: $000001A8 VOL: 0
+;PCODE: $000001A9 VOL: 0
+;PCODE: $000001AA VOL: 0
+;PCODE: $000001AB VOL: 0
+;PCODE: $000001AC VOL: 0
+; 0000 00F5                         }
+;PCODE: $000001AD VOL: 0
+;PCODE: $000001AE VOL: 0
+; 0000 00F6                         KAR10_OFF
+;PCODE: $000001AF VOL: 0
+;PCODE: $000001B0 VOL: 0
+;PCODE: $000001B1 VOL: 0
+; 0000 00F7                         KAR12_OFF
+;PCODE: $000001B2 VOL: 0
+;PCODE: $000001B3 VOL: 0
+;PCODE: $000001B4 VOL: 0
+; 0000 00F8                         out(XS6,XS7,XS8,XS9);
+;PCODE: $000001B5 VOL: 0
+;PCODE: $000001B6 VOL: 0
+;PCODE: $000001B7 VOL: 0
+;PCODE: $000001B8 VOL: 0
+;PCODE: $000001B9 VOL: 0
+; 0000 00F9                         timer_off();
+;PCODE: $000001BA VOL: 0
+; 0000 00FA                     }
+; 0000 00FB 
+; 0000 00FC                     KAR10_OFF
+;PCODE: $000001BB VOL: 0
+;PCODE: $000001BC VOL: 0
+;PCODE: $000001BD VOL: 0
+;PCODE: $000001BE VOL: 0
+; 0000 00FD                     KAR12_OFF
+;PCODE: $000001BF VOL: 0
+;PCODE: $000001C0 VOL: 0
+;PCODE: $000001C1 VOL: 0
+; 0000 00FE                     out(XS6,XS7,XS8,XS9);
+;PCODE: $000001C2 VOL: 0
+;PCODE: $000001C3 VOL: 0
+;PCODE: $000001C4 VOL: 0
+;PCODE: $000001C5 VOL: 0
+;PCODE: $000001C6 VOL: 0
+; 0000 00FF                     timer_off();
+;PCODE: $000001C7 VOL: 0
+; 0000 0100                     M = 0;
+;PCODE: $000001C8 VOL: 0
+;PCODE: $000001C9 VOL: 0
+; 0000 0101                     break;
+;PCODE: $000001CA VOL: 0
+; 0000 0102 
+; 0000 0103         case 7:     KAR45_ON
+;PCODE: $000001CB VOL: 0
+;PCODE: $000001CC VOL: 0
+;PCODE: $000001CD VOL: 0
+;PCODE: $000001CE VOL: 0
+;PCODE: $000001CF VOL: 0
+;PCODE: $000001D0 VOL: 0
+; 0000 0104                     M = 0;
+;PCODE: $000001D1 VOL: 0
+;PCODE: $000001D2 VOL: 0
+; 0000 0105                     break;
+;PCODE: $000001D3 VOL: 0
+; 0000 0106 
+; 0000 0107         case 8:     KAR46_ON
+;PCODE: $000001D4 VOL: 0
+;PCODE: $000001D5 VOL: 0
+;PCODE: $000001D6 VOL: 0
+;PCODE: $000001D7 VOL: 0
+;PCODE: $000001D8 VOL: 0
+;PCODE: $000001D9 VOL: 0
+; 0000 0108                     M = 0;
+;PCODE: $000001DA VOL: 0
+;PCODE: $000001DB VOL: 0
+; 0000 0109                     break;
+;PCODE: $000001DC VOL: 0
+; 0000 010A 
+; 0000 010B         case 9:     KAR46_OFF
+;PCODE: $000001DD VOL: 0
+;PCODE: $000001DE VOL: 0
+;PCODE: $000001DF VOL: 0
+;PCODE: $000001E0 VOL: 0
+;PCODE: $000001E1 VOL: 0
+;PCODE: $000001E2 VOL: 0
+; 0000 010C                     KAR45_OFF
+;PCODE: $000001E3 VOL: 0
+;PCODE: $000001E4 VOL: 0
+;PCODE: $000001E5 VOL: 0
+; 0000 010D                     M = 0;
+;PCODE: $000001E6 VOL: 0
+;PCODE: $000001E7 VOL: 0
+; 0000 010E                     break;
+;PCODE: $000001E8 VOL: 0
+; 0000 010F 
+; 0000 0110         case 40:    KAR105_ON
+;PCODE: $000001E9 VOL: 0
+;PCODE: $000001EA VOL: 0
+;PCODE: $000001EB VOL: 0
+;PCODE: $000001EC VOL: 0
+;PCODE: $000001ED VOL: 0
+;PCODE: $000001EE VOL: 0
+; 0000 0111                     KAR47_ON
+;PCODE: $000001EF VOL: 0
+;PCODE: $000001F0 VOL: 0
+;PCODE: $000001F1 VOL: 0
+; 0000 0112                     out(XS6,XS7,XS8,XS9);
+;PCODE: $000001F2 VOL: 0
+;PCODE: $000001F3 VOL: 0
+;PCODE: $000001F4 VOL: 0
+;PCODE: $000001F5 VOL: 0
+;PCODE: $000001F6 VOL: 0
+; 0000 0113                     timer_on();
+;PCODE: $000001F7 VOL: 0
+; 0000 0114                     while((KA54_OFF | KA55_ON | KA56_ON) && time<20){}
+;PCODE: $000001F8 VOL: 0
+;PCODE: $000001F9 VOL: 0
+;PCODE: $000001FA VOL: 0
+;PCODE: $000001FB VOL: 0
+;PCODE: $000001FC VOL: 0
+;PCODE: $000001FD VOL: 0
+;PCODE: $000001FE VOL: 0
+;PCODE: $000001FF VOL: 0
+;PCODE: $00000200 VOL: 0
+;PCODE: $00000201 VOL: 0
+;PCODE: $00000202 VOL: 0
+;PCODE: $00000203 VOL: 0
+;PCODE: $00000204 VOL: 0
+;PCODE: $00000205 VOL: 0
+;PCODE: $00000206 VOL: 0
+;PCODE: $00000207 VOL: 0
+;PCODE: $00000208 VOL: 0
+;PCODE: $00000209 VOL: 0
+;PCODE: $0000020A VOL: 0
+;PCODE: $0000020B VOL: 0
+;PCODE: $0000020C VOL: 0
+;PCODE: $0000020D VOL: 0
+;PCODE: $0000020E VOL: 0
+;PCODE: $0000020F VOL: 0
+;PCODE: $00000210 VOL: 0
+;PCODE: $00000211 VOL: 0
+;PCODE: $00000212 VOL: 0
+; 0000 0115                     KAR47_OFF
+;PCODE: $00000213 VOL: 0
+;PCODE: $00000214 VOL: 0
+;PCODE: $00000215 VOL: 0
+; 0000 0116                     KAR105_OFF
+;PCODE: $00000216 VOL: 0
+;PCODE: $00000217 VOL: 0
+;PCODE: $00000218 VOL: 0
+; 0000 0117                     timer_off();
+;PCODE: $00000219 VOL: 0
+; 0000 0118                     M = 0;
+;PCODE: $0000021A VOL: 0
+;PCODE: $0000021B VOL: 0
+; 0000 0119                     break;
+;PCODE: $0000021C VOL: 0
+; 0000 011A 
+; 0000 011B         case 41:    KAR103_ON
+;PCODE: $0000021D VOL: 0
+;PCODE: $0000021E VOL: 0
+;PCODE: $0000021F VOL: 0
+;PCODE: $00000220 VOL: 0
+;PCODE: $00000221 VOL: 0
+;PCODE: $00000222 VOL: 0
+; 0000 011C                     KAR47_ON
+;PCODE: $00000223 VOL: 0
+;PCODE: $00000224 VOL: 0
+;PCODE: $00000225 VOL: 0
+; 0000 011D                     out(XS6,XS7,XS8,XS9);
+;PCODE: $00000226 VOL: 0
+;PCODE: $00000227 VOL: 0
+;PCODE: $00000228 VOL: 0
+;PCODE: $00000229 VOL: 0
+;PCODE: $0000022A VOL: 0
+; 0000 011E                     timer_on();
+;PCODE: $0000022B VOL: 0
+; 0000 011F                     while((KA54_ON | KA55_OFF | KA56_ON) && time<20){}
+;PCODE: $0000022C VOL: 0
+;PCODE: $0000022D VOL: 0
+;PCODE: $0000022E VOL: 0
+;PCODE: $0000022F VOL: 0
+;PCODE: $00000230 VOL: 0
+;PCODE: $00000231 VOL: 0
+;PCODE: $00000232 VOL: 0
+;PCODE: $00000233 VOL: 0
+;PCODE: $00000234 VOL: 0
+;PCODE: $00000235 VOL: 0
+;PCODE: $00000236 VOL: 0
+;PCODE: $00000237 VOL: 0
+;PCODE: $00000238 VOL: 0
+;PCODE: $00000239 VOL: 0
+;PCODE: $0000023A VOL: 0
+;PCODE: $0000023B VOL: 0
+;PCODE: $0000023C VOL: 0
+;PCODE: $0000023D VOL: 0
+;PCODE: $0000023E VOL: 0
+;PCODE: $0000023F VOL: 0
+;PCODE: $00000240 VOL: 0
+;PCODE: $00000241 VOL: 0
+;PCODE: $00000242 VOL: 0
+;PCODE: $00000243 VOL: 0
+;PCODE: $00000244 VOL: 0
+;PCODE: $00000245 VOL: 0
+;PCODE: $00000246 VOL: 0
+; 0000 0120                     KAR47_OFF
+;PCODE: $00000247 VOL: 0
+;PCODE: $00000248 VOL: 0
+;PCODE: $00000249 VOL: 0
+; 0000 0121                     KAR103_OFF
+;PCODE: $0000024A VOL: 0
+;PCODE: $0000024B VOL: 0
+;PCODE: $0000024C VOL: 0
+; 0000 0122                     timer_off();
+;PCODE: $0000024D VOL: 0
+; 0000 0123                     M = 0;
+;PCODE: $0000024E VOL: 0
+;PCODE: $0000024F VOL: 0
+; 0000 0124                     break;
+;PCODE: $00000250 VOL: 0
+; 0000 0125 
+; 0000 0126         case 42:    KAR104_ON
+;PCODE: $00000251 VOL: 0
+;PCODE: $00000252 VOL: 0
+;PCODE: $00000253 VOL: 0
+;PCODE: $00000254 VOL: 0
+;PCODE: $00000255 VOL: 0
+;PCODE: $00000256 VOL: 0
+; 0000 0127                     KAR47_ON
+;PCODE: $00000257 VOL: 0
+;PCODE: $00000258 VOL: 0
+;PCODE: $00000259 VOL: 0
+; 0000 0128                     out(XS6,XS7,XS8,XS9);
+;PCODE: $0000025A VOL: 0
+;PCODE: $0000025B VOL: 0
+;PCODE: $0000025C VOL: 0
+;PCODE: $0000025D VOL: 0
+;PCODE: $0000025E VOL: 0
+; 0000 0129                     timer_on();
+;PCODE: $0000025F VOL: 0
+; 0000 012A                     while((KA54_ON | KA55_ON | KA56_OFF) && time<20){}
+;PCODE: $00000260 VOL: 0
+;PCODE: $00000261 VOL: 0
+;PCODE: $00000262 VOL: 0
+;PCODE: $00000263 VOL: 0
+;PCODE: $00000264 VOL: 0
+;PCODE: $00000265 VOL: 0
+;PCODE: $00000266 VOL: 0
+;PCODE: $00000267 VOL: 0
+;PCODE: $00000268 VOL: 0
+;PCODE: $00000269 VOL: 0
+;PCODE: $0000026A VOL: 0
+;PCODE: $0000026B VOL: 0
+;PCODE: $0000026C VOL: 0
+;PCODE: $0000026D VOL: 0
+;PCODE: $0000026E VOL: 0
+;PCODE: $0000026F VOL: 0
+;PCODE: $00000270 VOL: 0
+;PCODE: $00000271 VOL: 0
+;PCODE: $00000272 VOL: 0
+;PCODE: $00000273 VOL: 0
+;PCODE: $00000274 VOL: 0
+;PCODE: $00000275 VOL: 0
+;PCODE: $00000276 VOL: 0
+;PCODE: $00000277 VOL: 0
+;PCODE: $00000278 VOL: 0
+;PCODE: $00000279 VOL: 0
+;PCODE: $0000027A VOL: 0
+; 0000 012B                     KAR47_OFF
+;PCODE: $0000027B VOL: 0
+;PCODE: $0000027C VOL: 0
+;PCODE: $0000027D VOL: 0
+; 0000 012C                     KAR104_OFF
+;PCODE: $0000027E VOL: 0
+;PCODE: $0000027F VOL: 0
+;PCODE: $00000280 VOL: 0
+; 0000 012D                     timer_off();
+;PCODE: $00000281 VOL: 0
+; 0000 012E                     M = 0;
+;PCODE: $00000282 VOL: 0
+;PCODE: $00000283 VOL: 0
+; 0000 012F                     break;
+;PCODE: $00000284 VOL: 0
+; 0000 0130 
+; 0000 0131         default:    M = 0;
+;PCODE: $00000285 VOL: 0
+;PCODE: $00000286 VOL: 0
+;PCODE: $00000287 VOL: 0
+; 0000 0132     }
+;PCODE: $00000288 VOL: 0
+; 0000 0133 }
+;PCODE: $00000289 VOL: 0
+;PCODE: $0000028A VOL: 0
+;PCODE: $0000028B VOL: 0
+;PCODE: $0000028C VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;char scan(void)
+; 0000 0138 {
+;PCODE: $0000028D VOL: 0
+;PCODE: $0000028E VOL: 0
+; 0000 0139     char ka5=0;
+; 0000 013A 
+; 0000 013B     if(KA551_ON && KA6_ON && KA8_ON && KA4_ON && KA3_ON && KA7_ON){ka5=1;HL6_ON}else{ka5=0;HL6_OFF}
+;PCODE: $0000028F VOL: 0
+;	ka5 -> R17
+;PCODE: $00000290 VOL: 0
+;PCODE: $00000291 VOL: 0
+;PCODE: $00000292 VOL: 0
+;PCODE: $00000293 VOL: 0
+;PCODE: $00000294 VOL: 0
+;PCODE: $00000295 VOL: 0
+;PCODE: $00000296 VOL: 0
+;PCODE: $00000297 VOL: 0
+;PCODE: $00000298 VOL: 0
+;PCODE: $00000299 VOL: 0
+;PCODE: $0000029A VOL: 0
+;PCODE: $0000029B VOL: 0
+;PCODE: $0000029C VOL: 0
+;PCODE: $0000029D VOL: 0
+;PCODE: $0000029E VOL: 0
+;PCODE: $0000029F VOL: 0
+;PCODE: $000002A0 VOL: 0
+;PCODE: $000002A1 VOL: 0
+;PCODE: $000002A2 VOL: 0
+;PCODE: $000002A3 VOL: 0
+;PCODE: $000002A4 VOL: 0
+;PCODE: $000002A5 VOL: 0
+;PCODE: $000002A6 VOL: 0
+;PCODE: $000002A7 VOL: 0
+;PCODE: $000002A8 VOL: 0
+;PCODE: $000002A9 VOL: 0
+;PCODE: $000002AA VOL: 0
+;PCODE: $000002AB VOL: 0
+;PCODE: $000002AC VOL: 0
+;PCODE: $000002AD VOL: 0
+;PCODE: $000002AE VOL: 0
+;PCODE: $000002AF VOL: 0
+;PCODE: $000002B0 VOL: 0
+;PCODE: $000002B1 VOL: 0
+;PCODE: $000002B2 VOL: 0
+;PCODE: $000002B3 VOL: 0
+;PCODE: $000002B4 VOL: 0
+;PCODE: $000002B5 VOL: 0
+;PCODE: $000002B6 VOL: 0
+;PCODE: $000002B7 VOL: 0
+;PCODE: $000002B8 VOL: 0
+;PCODE: $000002B9 VOL: 0
+;PCODE: $000002BA VOL: 0
+; 0000 013C 
+; 0000 013D     if(KA13_ON){KAR13_ON}else{KAR13_OFF}
+;PCODE: $000002BB VOL: 0
+;PCODE: $000002BC VOL: 0
+;PCODE: $000002BD VOL: 0
+;PCODE: $000002BE VOL: 0
+;PCODE: $000002BF VOL: 0
+;PCODE: $000002C0 VOL: 0
+;PCODE: $000002C1 VOL: 0
+;PCODE: $000002C2 VOL: 0
+;PCODE: $000002C3 VOL: 0
+;PCODE: $000002C4 VOL: 0
+;PCODE: $000002C5 VOL: 0
+;PCODE: $000002C6 VOL: 0
+; 0000 013E 
+; 0000 013F     if(KA30_ON){KAR30_ON}else{KAR30_OFF}
+;PCODE: $000002C7 VOL: 0
+;PCODE: $000002C8 VOL: 0
+;PCODE: $000002C9 VOL: 0
+;PCODE: $000002CA VOL: 0
+;PCODE: $000002CB VOL: 0
+;PCODE: $000002CC VOL: 0
+;PCODE: $000002CD VOL: 0
+;PCODE: $000002CE VOL: 0
+;PCODE: $000002CF VOL: 0
+;PCODE: $000002D0 VOL: 0
+;PCODE: $000002D1 VOL: 0
+;PCODE: $000002D2 VOL: 0
+; 0000 0140 
+; 0000 0141     if(KA34_ON && ka5){KAR34_ON KAR100_ON}else{KAR34_OFF KAR100_OFF}//ON X,Z
+;PCODE: $000002D3 VOL: 0
+;PCODE: $000002D4 VOL: 0
+;PCODE: $000002D5 VOL: 0
+;PCODE: $000002D6 VOL: 0
+;PCODE: $000002D7 VOL: 0
+;PCODE: $000002D8 VOL: 0
+;PCODE: $000002D9 VOL: 0
+;PCODE: $000002DA VOL: 0
+;PCODE: $000002DB VOL: 0
+;PCODE: $000002DC VOL: 0
+;PCODE: $000002DD VOL: 0
+;PCODE: $000002DE VOL: 0
+;PCODE: $000002DF VOL: 0
+;PCODE: $000002E0 VOL: 0
+;PCODE: $000002E1 VOL: 0
+;PCODE: $000002E2 VOL: 0
+;PCODE: $000002E3 VOL: 0
+;PCODE: $000002E4 VOL: 0
+;PCODE: $000002E5 VOL: 0
+;PCODE: $000002E6 VOL: 0
+;PCODE: $000002E7 VOL: 0
+;PCODE: $000002E8 VOL: 0
+;PCODE: $000002E9 VOL: 0
+;PCODE: $000002EA VOL: 0
+;PCODE: $000002EB VOL: 0
+; 0000 0142 
+; 0000 0143     return ka5;
+;PCODE: $000002EC VOL: 0
+;PCODE: $000002ED VOL: 0
+;PCODE: $000002EE VOL: 0
+; 0000 0144 }
+;PCODE: $000002EF VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;void out(unsigned char xs_6, unsigned char xs_7, unsigned char xs_8, unsigned char xs_9)
+; 0000 0149 {
+;PCODE: $000002F0 VOL: 0
+;PCODE: $000002F1 VOL: 0
+; 0000 014A     static unsigned char first  = 0xFF;
+
+	.DSEG
+
+	.CSEG
+; 0000 014B     static unsigned char second = 0xFF;
+
+	.DSEG
+
+	.CSEG
+; 0000 014C     static unsigned char third  = 0xFF;
+
+	.DSEG
+
+	.CSEG
+; 0000 014D     static unsigned char fourth = 0xFF;
+
+	.DSEG
+
+	.CSEG
+; 0000 014E 
+; 0000 014F     if(first!=xs_6){
+;PCODE: $000002F2 VOL: 0
+;	xs_6 -> Y+3
+;	xs_7 -> Y+2
+;	xs_8 -> Y+1
+;	xs_9 -> Y+0
+;PCODE: $000002F3 VOL: 0
+;PCODE: $000002F4 VOL: 0
+;PCODE: $000002F5 VOL: 0
+;PCODE: $000002F6 VOL: 0
+; 0000 0150         PORTB&=~(1<<6);
+;PCODE: $000002F7 VOL: 0
+;PCODE: $000002F8 VOL: 0
+; 0000 0151         SPDR = xs_6;
+;PCODE: $000002F9 VOL: 0
+;PCODE: $000002FA VOL: 0
+; 0000 0152         while(!(SPSR & (1<<SPIF))){}
+;PCODE: $000002FB VOL: 0
+;PCODE: $000002FC VOL: 0
+;PCODE: $000002FD VOL: 0
+;PCODE: $000002FE VOL: 0
+;PCODE: $000002FF VOL: 0
+;PCODE: $00000300 VOL: 0
+; 0000 0153         PORTB|=(1<<6);
+;PCODE: $00000301 VOL: 0
+;PCODE: $00000302 VOL: 0
+; 0000 0154         first = xs_6;
+;PCODE: $00000303 VOL: 0
+;PCODE: $00000304 VOL: 0
+; 0000 0155     }
+; 0000 0156 
+; 0000 0157     if(second!=xs_7){
+;PCODE: $00000305 VOL: 0
+;PCODE: $00000306 VOL: 0
+;PCODE: $00000307 VOL: 0
+;PCODE: $00000308 VOL: 0
+;PCODE: $00000309 VOL: 0
+; 0000 0158         PORTB&=~(1<<5);
+;PCODE: $0000030A VOL: 0
+;PCODE: $0000030B VOL: 0
+; 0000 0159         SPDR = xs_7;
+;PCODE: $0000030C VOL: 0
+;PCODE: $0000030D VOL: 0
+; 0000 015A         while(!(SPSR & (1<<SPIF))){}
+;PCODE: $0000030E VOL: 0
+;PCODE: $0000030F VOL: 0
+;PCODE: $00000310 VOL: 0
+;PCODE: $00000311 VOL: 0
+;PCODE: $00000312 VOL: 0
+;PCODE: $00000313 VOL: 0
+; 0000 015B         PORTB|=(1<<5);
+;PCODE: $00000314 VOL: 0
+;PCODE: $00000315 VOL: 0
+; 0000 015C         second = xs_7;
+;PCODE: $00000316 VOL: 0
+;PCODE: $00000317 VOL: 0
+; 0000 015D     }
+; 0000 015E 
+; 0000 015F     if(third!=xs_8){
+;PCODE: $00000318 VOL: 0
+;PCODE: $00000319 VOL: 0
+;PCODE: $0000031A VOL: 0
+;PCODE: $0000031B VOL: 0
+;PCODE: $0000031C VOL: 0
+; 0000 0160         PORTB&=~(1<<4);
+;PCODE: $0000031D VOL: 0
+;PCODE: $0000031E VOL: 0
+; 0000 0161         SPDR = xs_8;
+;PCODE: $0000031F VOL: 0
+;PCODE: $00000320 VOL: 0
+; 0000 0162         while(!(SPSR & (1<<SPIF))){}
+;PCODE: $00000321 VOL: 0
+;PCODE: $00000322 VOL: 0
+;PCODE: $00000323 VOL: 0
+;PCODE: $00000324 VOL: 0
+;PCODE: $00000325 VOL: 0
+;PCODE: $00000326 VOL: 0
+; 0000 0163         PORTB|=(1<<4);
+;PCODE: $00000327 VOL: 0
+;PCODE: $00000328 VOL: 0
+; 0000 0164         third = xs_8;
+;PCODE: $00000329 VOL: 0
+;PCODE: $0000032A VOL: 0
+; 0000 0165     }
+; 0000 0166 
+; 0000 0167     if(fourth!=xs_9){
+;PCODE: $0000032B VOL: 0
+;PCODE: $0000032C VOL: 0
+;PCODE: $0000032D VOL: 0
+;PCODE: $0000032E VOL: 0
+;PCODE: $0000032F VOL: 0
+; 0000 0168         PORTB&=~(1<<0);
+;PCODE: $00000330 VOL: 0
+;PCODE: $00000331 VOL: 0
+; 0000 0169         SPDR = xs_9;
+;PCODE: $00000332 VOL: 0
+;PCODE: $00000333 VOL: 0
+; 0000 016A         while(!(SPSR & (1<<SPIF))){}
+;PCODE: $00000334 VOL: 0
+;PCODE: $00000335 VOL: 0
+;PCODE: $00000336 VOL: 0
+;PCODE: $00000337 VOL: 0
+;PCODE: $00000338 VOL: 0
+;PCODE: $00000339 VOL: 0
+; 0000 016B         PORTB|=(1<<0);
+;PCODE: $0000033A VOL: 0
+;PCODE: $0000033B VOL: 0
+; 0000 016C         fourth = xs_9;
+;PCODE: $0000033C VOL: 0
+;PCODE: $0000033D VOL: 0
+; 0000 016D     }
+; 0000 016E }
+;PCODE: $0000033E VOL: 0
+;PCODE: $0000033F VOL: 0
+;PCODE: $00000340 VOL: 0
+;PCODE: $00000341 VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;void led(void)
+; 0000 0173 {
+;PCODE: $00000342 VOL: 0
+;PCODE: $00000343 VOL: 0
+; 0000 0174     //271 +24B
+; 0000 0175     if(KA3_ON){HL8_ON}else{HL8_OFF}
+;PCODE: $00000344 VOL: 0
+;PCODE: $00000345 VOL: 0
+;PCODE: $00000346 VOL: 0
+;PCODE: $00000347 VOL: 0
+;PCODE: $00000348 VOL: 0
+;PCODE: $00000349 VOL: 0
+;PCODE: $0000034A VOL: 0
+;PCODE: $0000034B VOL: 0
+;PCODE: $0000034C VOL: 0
+;PCODE: $0000034D VOL: 0
+;PCODE: $0000034E VOL: 0
+;PCODE: $0000034F VOL: 0
+; 0000 0176 
+; 0000 0177     if(KA4_ON){HL7_ON}else{HL7_OFF}
+;PCODE: $00000350 VOL: 0
+;PCODE: $00000351 VOL: 0
+;PCODE: $00000352 VOL: 0
+;PCODE: $00000353 VOL: 0
+;PCODE: $00000354 VOL: 0
+;PCODE: $00000355 VOL: 0
+;PCODE: $00000356 VOL: 0
+;PCODE: $00000357 VOL: 0
+;PCODE: $00000358 VOL: 0
+;PCODE: $00000359 VOL: 0
+;PCODE: $0000035A VOL: 0
+;PCODE: $0000035B VOL: 0
+; 0000 0178 
+; 0000 0179     if(KA8_ON){HL5_ON}else{HL5_OFF}
+;PCODE: $0000035C VOL: 0
+;PCODE: $0000035D VOL: 0
+;PCODE: $0000035E VOL: 0
+;PCODE: $0000035F VOL: 0
+;PCODE: $00000360 VOL: 0
+;PCODE: $00000361 VOL: 0
+;PCODE: $00000362 VOL: 0
+;PCODE: $00000363 VOL: 0
+;PCODE: $00000364 VOL: 0
+;PCODE: $00000365 VOL: 0
+;PCODE: $00000366 VOL: 0
+;PCODE: $00000367 VOL: 0
+; 0000 017A 
+; 0000 017B     if(KA11_ON){HL4_ON}else{HL4_OFF}
+;PCODE: $00000368 VOL: 0
+;PCODE: $00000369 VOL: 0
+;PCODE: $0000036A VOL: 0
+;PCODE: $0000036B VOL: 0
+;PCODE: $0000036C VOL: 0
+;PCODE: $0000036D VOL: 0
+;PCODE: $0000036E VOL: 0
+;PCODE: $0000036F VOL: 0
+;PCODE: $00000370 VOL: 0
+;PCODE: $00000371 VOL: 0
+;PCODE: $00000372 VOL: 0
+;PCODE: $00000373 VOL: 0
+; 0000 017C 
+; 0000 017D     if(KA54_ON){HL3_ON}else{HL3_OFF}//S 0
+;PCODE: $00000374 VOL: 0
+;PCODE: $00000375 VOL: 0
+;PCODE: $00000376 VOL: 0
+;PCODE: $00000377 VOL: 0
+;PCODE: $00000378 VOL: 0
+;PCODE: $00000379 VOL: 0
+;PCODE: $0000037A VOL: 0
+;PCODE: $0000037B VOL: 0
+;PCODE: $0000037C VOL: 0
+;PCODE: $0000037D VOL: 0
+;PCODE: $0000037E VOL: 0
+;PCODE: $0000037F VOL: 0
+; 0000 017E 
+; 0000 017F     if(KA55_ON){HL2_ON}else{HL2_OFF}//S 1
+;PCODE: $00000380 VOL: 0
+;PCODE: $00000381 VOL: 0
+;PCODE: $00000382 VOL: 0
+;PCODE: $00000383 VOL: 0
+;PCODE: $00000384 VOL: 0
+;PCODE: $00000385 VOL: 0
+;PCODE: $00000386 VOL: 0
+;PCODE: $00000387 VOL: 0
+;PCODE: $00000388 VOL: 0
+;PCODE: $00000389 VOL: 0
+;PCODE: $0000038A VOL: 0
+;PCODE: $0000038B VOL: 0
+; 0000 0180 
+; 0000 0181     if(KA56_ON){HL1_ON}else{HL1_OFF}//S 2
+;PCODE: $0000038C VOL: 0
+;PCODE: $0000038D VOL: 0
+;PCODE: $0000038E VOL: 0
+;PCODE: $0000038F VOL: 0
+;PCODE: $00000390 VOL: 0
+;PCODE: $00000391 VOL: 0
+;PCODE: $00000392 VOL: 0
+;PCODE: $00000393 VOL: 0
+;PCODE: $00000394 VOL: 0
+;PCODE: $00000395 VOL: 0
+;PCODE: $00000396 VOL: 0
+;PCODE: $00000397 VOL: 0
+; 0000 0182 }
+;PCODE: $00000398 VOL: 0
+;PCODE: $00000399 VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;interrupt [TIM1_OVF] void timer1_ovf_isr(void)
+; 0000 0187 {
+;PCODE: $0000039A VOL: 0
+;PCODE: $0000039B VOL: 0
+; 0000 0188     time++;
+;PCODE: $0000039C VOL: 0
+;PCODE: $0000039D VOL: 0
+;PCODE: $0000039E VOL: 0
+; 0000 0189 }
+;PCODE: $0000039F VOL: 0
+;PCODE: $000003A0 VOL: 0
+;PCODE: $000003A1 VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;interrupt [TIM3_OVF] void timer3_ovf_isr(void)
+; 0000 018E {
+;PCODE: $000003A2 VOL: 0
+;PCODE: $000003A3 VOL: 0
+; 0000 018F     static int time_lubrication = 0;
+; 0000 0190     time_lubrication++;
+;PCODE: $000003A4 VOL: 0
+;PCODE: $000003A5 VOL: 0
+;PCODE: $000003A6 VOL: 0
+;PCODE: $000003A7 VOL: 0
+; 0000 0191     if(time_lubrication>600)
+;PCODE: $000003A8 VOL: 0
+;PCODE: $000003A9 VOL: 0
+;PCODE: $000003AA VOL: 0
+; 0000 0192         time_lubrication = 0;
+;PCODE: $000003AB VOL: 0
+;PCODE: $000003AC VOL: 0
+; 0000 0193 
+; 0000 0194     if(time_lubrication>=0 && time_lubrication<30){//lubrication
+;PCODE: $000003AD VOL: 0
+;PCODE: $000003AE VOL: 0
+;PCODE: $000003AF VOL: 0
+;PCODE: $000003B0 VOL: 0
+;PCODE: $000003B1 VOL: 0
+;PCODE: $000003B2 VOL: 0
+;PCODE: $000003B3 VOL: 0
+;PCODE: $000003B4 VOL: 0
+;PCODE: $000003B5 VOL: 0
+;PCODE: $000003B6 VOL: 0
+;PCODE: $000003B7 VOL: 0
+; 0000 0195         if(KA9_ON){
+;PCODE: $000003B8 VOL: 0
+;PCODE: $000003B9 VOL: 0
+;PCODE: $000003BA VOL: 0
+; 0000 0196             KAR32_ON
+;PCODE: $000003BB VOL: 0
+;PCODE: $000003BC VOL: 0
+;PCODE: $000003BD VOL: 0
+; 0000 0197         }else {
+;PCODE: $000003BE VOL: 0
+;PCODE: $000003BF VOL: 0
+; 0000 0198             KAR32_OFF
+;PCODE: $000003C0 VOL: 0
+;PCODE: $000003C1 VOL: 0
+;PCODE: $000003C2 VOL: 0
+; 0000 0199         }
+;PCODE: $000003C3 VOL: 0
+; 0000 019A     }
+; 0000 019B }
+;PCODE: $000003C4 VOL: 0
+;PCODE: $000003C5 VOL: 0
+;PCODE: $000003C6 VOL: 0
+;PCODE: $000003C7 VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;void timer_on(void)
+; 0000 01A0 {
+;PCODE: $000003C8 VOL: 0
+;PCODE: $000003C9 VOL: 0
+; 0000 01A1     time = 0;
+;PCODE: $000003CA VOL: 0
+; 0000 01A2     TCCR1A=0x00;
+;PCODE: $000003CB VOL: 0
+;PCODE: $000003CC VOL: 0
+; 0000 01A3     TCCR1B=0x04;
+;PCODE: $000003CD VOL: 0
+;PCODE: $000003CE VOL: 0
+; 0000 01A4     TCNT1H=0x00;
+;PCODE: $000003CF VOL: 0
+;PCODE: $000003D0 VOL: 0
+; 0000 01A5     TCNT1L=0x00;
+;PCODE: $000003D1 VOL: 0
+;PCODE: $000003D2 VOL: 0
+; 0000 01A6 }
+;PCODE: $000003D3 VOL: 0
+;PCODE: $000003D4 VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;void timer_off(void)
+; 0000 01AB {
+;PCODE: $000003D5 VOL: 0
+;PCODE: $000003D6 VOL: 0
+; 0000 01AC     time = 0;
+;PCODE: $000003D7 VOL: 0
+; 0000 01AD     TCCR1A=0x00;
+;PCODE: $000003D8 VOL: 0
+;PCODE: $000003D9 VOL: 0
+; 0000 01AE     TCCR1B=0x00;
+;PCODE: $000003DA VOL: 0
+;PCODE: $000003DB VOL: 0
+; 0000 01AF     TCNT1H=0x00;
+;PCODE: $000003DC VOL: 0
+;PCODE: $000003DD VOL: 0
+; 0000 01B0     TCNT1L=0x00;
+;PCODE: $000003DE VOL: 0
+;PCODE: $000003DF VOL: 0
+; 0000 01B1 }
+;PCODE: $000003E0 VOL: 0
+;PCODE: $000003E1 VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------
+;void init(void){
+; 0000 01B5 void init(void){
+;PCODE: $000003E2 VOL: 0
+;PCODE: $000003E3 VOL: 0
+; 0000 01B6 
+; 0000 01B7 PORTA=0x00;
+;PCODE: $000003E4 VOL: 0
+;PCODE: $000003E5 VOL: 0
+; 0000 01B8 DDRA=0x00;
+;PCODE: $000003E6 VOL: 0
+;PCODE: $000003E7 VOL: 0
+; 0000 01B9 
+; 0000 01BA PORTB=0b00000000;
+;PCODE: $000003E8 VOL: 0
+;PCODE: $000003E9 VOL: 0
+; 0000 01BB DDRB=0b01110111;
+;PCODE: $000003EA VOL: 0
+;PCODE: $000003EB VOL: 0
+; 0000 01BC 
+; 0000 01BD PORTC=0x00;
+;PCODE: $000003EC VOL: 0
+;PCODE: $000003ED VOL: 0
+; 0000 01BE DDRC=0x00;
+;PCODE: $000003EE VOL: 0
+;PCODE: $000003EF VOL: 0
+; 0000 01BF 
+; 0000 01C0 PORTD=0x00;
+;PCODE: $000003F0 VOL: 0
+;PCODE: $000003F1 VOL: 0
+; 0000 01C1 DDRD=0x00;
+;PCODE: $000003F2 VOL: 0
+;PCODE: $000003F3 VOL: 0
+; 0000 01C2 
+; 0000 01C3 PORTE=0x00;
+;PCODE: $000003F4 VOL: 0
+;PCODE: $000003F5 VOL: 0
+; 0000 01C4 DDRE=0x00;
+;PCODE: $000003F6 VOL: 0
+;PCODE: $000003F7 VOL: 0
+; 0000 01C5 
+; 0000 01C6 PORTF=0b11111111;
+;PCODE: $000003F8 VOL: 0
+;PCODE: $000003F9 VOL: 0
+; 0000 01C7 DDRF=0x00;
+;PCODE: $000003FA VOL: 0
+;PCODE: $000003FB VOL: 0
+; 0000 01C8 
+; 0000 01C9 // Port G initialization
+; 0000 01CA // Func4=In Func3=In Func2=In Func1=In Func0=In
+; 0000 01CB // State4=T State3=T State2=T State1=T State0=T
+; 0000 01CC PORTG=0b11111;
+;PCODE: $000003FC VOL: 0
+;PCODE: $000003FD VOL: 0
+; 0000 01CD DDRG=0x00;
+;PCODE: $000003FE VOL: 0
+;PCODE: $000003FF VOL: 0
+; 0000 01CE 
+; 0000 01CF // Timer/Counter 0 initialization
+; 0000 01D0 // Clock source: System Clock
+; 0000 01D1 // Clock value: Timer 0 Stopped
+; 0000 01D2 // Mode: Normal top=0xFF
+; 0000 01D3 // OC0 output: Disconnected
+; 0000 01D4 ASSR=0x00;
+;PCODE: $00000400 VOL: 0
+;PCODE: $00000401 VOL: 0
+; 0000 01D5 TCCR0=0x00;
+;PCODE: $00000402 VOL: 0
+;PCODE: $00000403 VOL: 0
+; 0000 01D6 TCNT0=0x00;
+;PCODE: $00000404 VOL: 0
+;PCODE: $00000405 VOL: 0
+; 0000 01D7 OCR0=0x00;
+;PCODE: $00000406 VOL: 0
+;PCODE: $00000407 VOL: 0
+; 0000 01D8 
+; 0000 01D9 // Timer/Counter 1 initialization
+; 0000 01DA // Clock source: System Clock
+; 0000 01DB // Clock value: Timer1 Stopped
+; 0000 01DC // Mode: Normal top=0xFFFF
+; 0000 01DD // OC1A output: Discon.
+; 0000 01DE // OC1B output: Discon.
+; 0000 01DF // OC1C output: Discon.
+; 0000 01E0 // Noise Canceler: Off
+; 0000 01E1 // Input Capture on Falling Edge
+; 0000 01E2 // Timer1 Overflow Interrupt: Off
+; 0000 01E3 // Input Capture Interrupt: Off
+; 0000 01E4 // Compare A Match Interrupt: Off
+; 0000 01E5 // Compare B Match Interrupt: Off
+; 0000 01E6 // Compare C Match Interrupt: Off
+; 0000 01E7 TCCR1A=0x00;
+;PCODE: $00000408 VOL: 0
+;PCODE: $00000409 VOL: 0
+; 0000 01E8 TCCR1B=0x00;
+;PCODE: $0000040A VOL: 0
+;PCODE: $0000040B VOL: 0
+; 0000 01E9 TCNT1H=0x00;
+;PCODE: $0000040C VOL: 0
+;PCODE: $0000040D VOL: 0
+; 0000 01EA TCNT1L=0x00;
+;PCODE: $0000040E VOL: 0
+;PCODE: $0000040F VOL: 0
+; 0000 01EB ICR1H=0x00;
+;PCODE: $00000410 VOL: 0
+;PCODE: $00000411 VOL: 0
+; 0000 01EC ICR1L=0x00;
+;PCODE: $00000412 VOL: 0
+;PCODE: $00000413 VOL: 0
+; 0000 01ED OCR1AH=0x00;
+;PCODE: $00000414 VOL: 0
+;PCODE: $00000415 VOL: 0
+; 0000 01EE OCR1AL=0x00;
+;PCODE: $00000416 VOL: 0
+;PCODE: $00000417 VOL: 0
+; 0000 01EF OCR1BH=0x00;
+;PCODE: $00000418 VOL: 0
+;PCODE: $00000419 VOL: 0
+; 0000 01F0 OCR1BL=0x00;
+;PCODE: $0000041A VOL: 0
+;PCODE: $0000041B VOL: 0
+; 0000 01F1 OCR1CH=0x00;
+;PCODE: $0000041C VOL: 0
+;PCODE: $0000041D VOL: 0
+; 0000 01F2 OCR1CL=0x00;
+;PCODE: $0000041E VOL: 0
+;PCODE: $0000041F VOL: 0
+; 0000 01F3 
+; 0000 01F4 // Timer/Counter 2 initialization
+; 0000 01F5 // Clock source: System Clock
+; 0000 01F6 // Clock value: Timer2 Stopped
+; 0000 01F7 // Mode: Normal top=0xFF
+; 0000 01F8 // OC2 output: Disconnected
+; 0000 01F9 TCCR2=0x00;
+;PCODE: $00000420 VOL: 0
+;PCODE: $00000421 VOL: 0
+; 0000 01FA TCNT2=0x00;
+;PCODE: $00000422 VOL: 0
+;PCODE: $00000423 VOL: 0
+; 0000 01FB OCR2=0x00;
+;PCODE: $00000424 VOL: 0
+;PCODE: $00000425 VOL: 0
+; 0000 01FC 
+; 0000 01FD // Timer/Counter 3 initialization
+; 0000 01FE // Clock source: System Clock
+; 0000 01FF // Clock value: Timer3 Stopped
+; 0000 0200 // Mode: Normal top=0xFFFF
+; 0000 0201 // OC3A output: Discon.
+; 0000 0202 // OC3B output: Discon.
+; 0000 0203 // OC3C output: Discon.
+; 0000 0204 // Noise Canceler: Off
+; 0000 0205 // Input Capture on Falling Edge
+; 0000 0206 // Timer3 Overflow Interrupt: Off
+; 0000 0207 // Input Capture Interrupt: Off
+; 0000 0208 // Compare A Match Interrupt: Off
+; 0000 0209 // Compare B Match Interrupt: Off
+; 0000 020A // Compare C Match Interrupt: Off
+; 0000 020B TCCR3A=0x00;
+;PCODE: $00000426 VOL: 0
+;PCODE: $00000427 VOL: 0
+; 0000 020C TCCR3B=0x04;
+;PCODE: $00000428 VOL: 0
+;PCODE: $00000429 VOL: 0
+; 0000 020D TCNT3H=0x00;
+;PCODE: $0000042A VOL: 0
+;PCODE: $0000042B VOL: 0
+; 0000 020E TCNT3L=0x00;
+;PCODE: $0000042C VOL: 0
+;PCODE: $0000042D VOL: 0
+; 0000 020F ICR3H=0x00;
+;PCODE: $0000042E VOL: 0
+;PCODE: $0000042F VOL: 0
+; 0000 0210 ICR3L=0x00;
+;PCODE: $00000430 VOL: 0
+;PCODE: $00000431 VOL: 0
+; 0000 0211 OCR3AH=0x00;
+;PCODE: $00000432 VOL: 0
+;PCODE: $00000433 VOL: 0
+; 0000 0212 OCR3AL=0x00;
+;PCODE: $00000434 VOL: 0
+;PCODE: $00000435 VOL: 0
+; 0000 0213 OCR3BH=0x00;
+;PCODE: $00000436 VOL: 0
+;PCODE: $00000437 VOL: 0
+; 0000 0214 OCR3BL=0x00;
+;PCODE: $00000438 VOL: 0
+;PCODE: $00000439 VOL: 0
+; 0000 0215 OCR3CH=0x00;
+;PCODE: $0000043A VOL: 0
+;PCODE: $0000043B VOL: 0
+; 0000 0216 OCR3CL=0x00;
+;PCODE: $0000043C VOL: 0
+;PCODE: $0000043D VOL: 0
+; 0000 0217 
+; 0000 0218 // External Interrupt(s) initialization
+; 0000 0219 // INT0: Off
+; 0000 021A // INT1: Off
+; 0000 021B // INT2: Off
+; 0000 021C // INT3: Off
+; 0000 021D // INT4: Off
+; 0000 021E // INT5: Off
+; 0000 021F // INT6: Off
+; 0000 0220 // INT7: Off
+; 0000 0221 EICRA=0x00;
+;PCODE: $0000043E VOL: 0
+;PCODE: $0000043F VOL: 0
+; 0000 0222 EICRB=0x00;
+;PCODE: $00000440 VOL: 0
+;PCODE: $00000441 VOL: 0
+; 0000 0223 EIMSK=0x00;
+;PCODE: $00000442 VOL: 0
+;PCODE: $00000443 VOL: 0
+; 0000 0224 
+; 0000 0225 // Timer(s)/Counter(s) Interrupt(s) initialization
+; 0000 0226 TIMSK=0x04;
+;PCODE: $00000444 VOL: 0
+;PCODE: $00000445 VOL: 0
+; 0000 0227 
+; 0000 0228 ETIMSK=0x04;
+;PCODE: $00000446 VOL: 0
+;PCODE: $00000447 VOL: 0
+; 0000 0229 
+; 0000 022A // USART0 initialization
+; 0000 022B // USART0 disabled
+; 0000 022C UCSR0B=0x00;
+;PCODE: $00000448 VOL: 0
+;PCODE: $00000449 VOL: 0
+; 0000 022D 
+; 0000 022E // USART1 initialization
+; 0000 022F // USART1 disabled
+; 0000 0230 UCSR1B=0x00;
+;PCODE: $0000044A VOL: 0
+;PCODE: $0000044B VOL: 0
+; 0000 0231 
+; 0000 0232 // Analog Comparator initialization
+; 0000 0233 // Analog Comparator: Off
+; 0000 0234 // Analog Comparator Input Capture by Timer/Counter 1: Off
+; 0000 0235 ACSR=0x80;
+;PCODE: $0000044C VOL: 0
+;PCODE: $0000044D VOL: 0
+; 0000 0236 SFIOR=0x00;
+;PCODE: $0000044E VOL: 0
+;PCODE: $0000044F VOL: 0
+; 0000 0237 
+; 0000 0238 // ADC initialization
+; 0000 0239 // ADC disabled
+; 0000 023A ADCSRA=0x00;
+;PCODE: $00000450 VOL: 0
+;PCODE: $00000451 VOL: 0
+; 0000 023B 
+; 0000 023C // SPI initialization
+; 0000 023D // SPI Type: Master
+; 0000 023E // SPI Clock Rate: 125,000 kHz
+; 0000 023F // SPI Clock Phase: Cycle Start
+; 0000 0240 // SPI Clock Polarity: High
+; 0000 0241 // SPI Data Order: MSB First
+; 0000 0242 SPCR=0x53;//5B
+;PCODE: $00000452 VOL: 0
+;PCODE: $00000453 VOL: 0
+; 0000 0243 SPSR=0x00;
+;PCODE: $00000454 VOL: 0
+;PCODE: $00000455 VOL: 0
+; 0000 0244 
+; 0000 0245 // TWI initialization
+; 0000 0246 // TWI disabled
+; 0000 0247 TWCR=0x00;
+;PCODE: $00000456 VOL: 0
+;PCODE: $00000457 VOL: 0
+; 0000 0248 #asm("sei")
+;PCODE: $00000458 VOL: 0
+	sei
+;PCODE: $00000459 VOL: 0
+; 0000 0249 }
+;PCODE: $0000045A VOL: 0
+;PCODE: $0000045B VOL: 0
+;//------------------------------------------------------
+;//
+;//------------------------------------------------------

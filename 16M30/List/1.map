@@ -1,0 +1,24 @@
+RAM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+M                                                                 0x0500       2
+T                                                                 0x0502       2
+KOD                                                               0x0504       2
+first                                                             0x0506       1
+second                                                            0x0507       1
+third                                                             0x0508       1
+fourth                                                            0x0509       1
+time_lubrication                                                  0x050A       2
+
+EEPROM Allocation
+Variable                                                          Address   Size
+--------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                          Register  Size
+--------------------------------------------------------------------------------
+time                                                              R4,R5        2
+XS6                                                               R7           1
+XS7                                                               R6           1
+XS8                                                               R9           1
+XS9                                                               R8           1
